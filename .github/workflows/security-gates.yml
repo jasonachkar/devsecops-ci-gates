@@ -116,7 +116,7 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@c36620d31ac7c881962c3d9dd939c40ec9434f2b # v3.26.12
+        uses: github/codeql-action/init@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
         with:
           languages: ${{ matrix.language }}
           queries: security-extended,security-and-quality
@@ -135,7 +135,7 @@ jobs:
           dotnet build --no-restore --configuration Release
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@c36620d31ac7c881962c3d9dd939c40ec9434f2b # v3.26.12
+        uses: github/codeql-action/analyze@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
         with:
           category: "/language:${{ matrix.language }}"
           output: ${{ env.REPORTS_DIR }}
@@ -221,7 +221,7 @@ jobs:
 
       - name: Upload Checkov SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@c36620d31ac7c881962c3d9dd939c40ec9434f2b # v3.26.12
+        uses: github/codeql-action/upload-sarif@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
         with:
           sarif_file: ${{ env.REPORTS_DIR }}/checkov-results.sarif
           category: checkov
@@ -264,7 +264,7 @@ jobs:
 
       - name: Upload Trivy SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@c36620d31ac7c881962c3d9dd939c40ec9434f2b # v3.26.12
+        uses: github/codeql-action/upload-sarif@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
         with:
           sarif_file: '${{ env.REPORTS_DIR }}/trivy-${{ matrix.app }}-results.sarif'
           category: 'trivy-${{ matrix.app }}'
