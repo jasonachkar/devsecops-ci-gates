@@ -1,0 +1,42 @@
+{
+  "name": "@devsecops/node-api",
+  "version": "1.0.0",
+  "description": "Sample Node.js API for DevSecOps security scanning demonstration",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts",
+    "test": "echo \"Tests would go here\" && exit 0",
+    "lint": "eslint src --ext .ts",
+    "audit": "npm audit --json > ../../reports/npm-audit.json || true"
+  },
+  "keywords": [
+    "devsecops",
+    "security",
+    "api",
+    "express"
+  ],
+  "author": "DevSecOps Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express-rate-limit": "^7.1.5",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.6",
+    "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.5",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

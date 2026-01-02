@@ -1,0 +1,240 @@
+// Prisma schema for DevSecOps Security Dashboard
+// Production-ready database schema with proper indexes and relationships
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Repositories table - Multi-repo support
+model Repository {
+  id          String   @id @default(uuid())
+  name        String
+  url         String
+  provider    String   @default("github") // github, gitlab, bitbucket
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  scans    Scan[]
+  trends   ScanTrend[]
+  apiKeys  ApiKey[]
+
+  @@unique([name, provider], name: "repository_name_provider")
+  @@index([isActive])
+  @@map("repositories")
+}
+
+// Scans table - One per CI/CD run
+model Scan {
+  id            String   @id @default(uuid())
+  repositoryId  String
+  branch        String
+  commitSha     String
+  commitMessage String?
+  triggeredBy   String   // GitHub username, CI system, etc.
+  status        String   @default("running") // running, completed, failed
+  gateStatus    String?  // passed, failed, warning
+  totalFindings Int      @default(0)
+  criticalCount Int      @default(0)
+  highCount     Int      @default(0)
+  mediumCount   Int      @default(0)
+  lowCount      Int      @default(0)
+  infoCount     Int      @default(0)
+  startedAt     DateTime @default(now())
+  completedAt   DateTime?
+  metadata      Json?    // Additional CI/CD metadata
+  createdAt     DateTime @default(now())
+
+  repository Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  findings   Finding[]
+  sbomRecords SbomRecord[]
+  remediationTickets RemediationTicket[]
+
+  @@index([repositoryId])
+  @@index([createdAt])
+  @@index([branch])
+  @@index([status])
+  @@map("scans")
+}
+
+// Findings table - Normalized security findings
+model Finding {
+  id          String   @id @default(uuid())
+  scanId      String
+  tool        String   // codeql, gitleaks, trivy, etc.
+  category    String?  // sast, dast, sca, iac, secrets
+  severity    String   // critical, high, medium, low, info
+  ruleId      String?
+  title       String
+  filePath    String?
+  lineNumber  Int?
+  cwe         String?
+  cvssScore   Decimal? @db.Decimal(3, 1)
+  message     String?
+  fingerprint String?  // For deduplication
+  status      String   @default("open") // open, resolved, false_positive, accepted_risk
+  assignedTo  String?
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  metadata    Json?    // Additional finding metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  scan                Scan                 @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  complianceMappings  ComplianceMapping[]
+  remediationTickets  RemediationTicket[]
+
+  @@index([scanId])
+  @@index([severity])
+  @@index([tool])
+  @@index([status])
+  @@index([fingerprint])
+  @@index([assignedTo])
+  @@map("findings")
+}
+
+// Historical trends - Aggregated daily data
+model ScanTrend {
+  id            String   @id @default(uuid())
+  repositoryId  String
+  date          DateTime @db.Date
+  totalFindings Int      @default(0)
+  criticalCount Int      @default(0)
+  highCount     Int      @default(0)
+  mediumCount   Int      @default(0)
+  lowCount      Int      @default(0)
+  infoCount     Int      @default(0)
+  scansCount    Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([repositoryId, date], name: "repository_date_unique")
+  @@index([repositoryId, date])
+  @@map("scan_trends")
+}
+
+// Compliance mappings - OWASP Top 10, CWE Top 25, CIS Benchmarks
+model ComplianceMapping {
+  id        String   @id @default(uuid())
+  findingId String
+  framework String   // owasp-top10, cwe-top25, cis-aws-foundations, nist
+  category  String   // A01:2021, CWE-79, CIS-1.1, etc.
+  createdAt DateTime @default(now())
+
+  finding Finding @relation(fields: [findingId], references: [id], onDelete: Cascade)
+
+  @@index([findingId])
+  @@index([framework])
+  @@map("compliance_mappings")
+}
+
+// SBOM records - Software Bill of Materials
+model SbomRecord {
+  id        String   @id @default(uuid())
+  scanId    String
+  format    String   // cyclonedx, spdx
+  data      Json     // Full SBOM document
+  createdAt DateTime @default(now())
+
+  scan Scan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@index([scanId])
+  @@map("sbom_records")
+}
+
+// Remediation tickets - Track fixes
+model RemediationTicket {
+  id          String   @id @default(uuid())
+  scanId      String
+  findingId   String?
+  title       String
+  description String?
+  status      String   @default("open") // open, in_progress, resolved, closed
+  priority    String   @default("medium") // low, medium, high, critical
+  assignedTo  String?
+  dueDate     DateTime?
+  resolvedAt  DateTime?
+  metadata    Json?    // Integration with Jira, GitHub Issues, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  scan    Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  finding Finding? @relation(fields: [findingId], references: [id], onDelete: SetNull)
+
+  @@index([scanId])
+  @@index([status])
+  @@index([assignedTo])
+  @@map("remediation_tickets")
+}
+
+// AWS Security Hub findings - Synced from AWS
+model AwsSecurityFinding {
+  id                String   @id @default(uuid())
+  awsFindingId      String   @unique // Security Hub finding ID
+  title             String
+  description       String?
+  severity          String   // CRITICAL, HIGH, MEDIUM, LOW, INFORMATIONAL
+  status            String   @default("NEW") // NEW, NOTIFIED, RESOLVED, SUPPRESSED
+  resourceType      String?
+  resourceId        String?
+  complianceStatus  String?  // PASSED, WARNING, FAILED, NOT_AVAILABLE
+  workflowStatus    String?  // NEW, NOTIFIED, RESOLVED, SUPPRESSED
+  recordState       String?  // ACTIVE, ARCHIVED
+  awsAccountId     String?
+  region            String?
+  rawData           Json     // Full Security Hub finding
+  syncedAt          DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([severity])
+  @@index([status])
+  @@index([awsAccountId])
+  @@index([syncedAt])
+  @@map("aws_security_findings")
+}
+
+// Users table - For authentication
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      String   @default("viewer") // admin, engineer, developer, viewer
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  apiKeys ApiKey[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// API Keys - For CI/CD integration
+model ApiKey {
+  id           String   @id @default(uuid())
+  key          String   @unique
+  name         String
+  repositoryId String?
+  userId       String?
+  lastUsedAt   DateTime?
+  expiresAt    DateTime?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  repository Repository? @relation(fields: [repositoryId], references: [id], onDelete: SetNull)
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([key])
+  @@index([isActive])
+  @@map("api_keys")
+}
+

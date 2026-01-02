@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: devsecops-postgres
+    environment:
+      POSTGRES_USER: devsecops
+      POSTGRES_PASSWORD: devsecops_password
+      POSTGRES_DB: devsecops
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devsecops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: devsecops-api
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      API_VERSION: v1
+      DATABASE_URL: postgresql://devsecops:devsecops_password@postgres:5432/devsecops?schema=public
+      JWT_SECRET: development-jwt-secret-change-in-production-min-32-chars-please
+      JWT_EXPIRES_IN: 7d
+      CORS_ORIGIN: http://localhost:5173
+      AWS_SECURITY_HUB_ENABLED: false
+      LOG_LEVEL: info
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    # For development: install deps, generate Prisma, migrate, seed, then start
+    command: sh -c "npm install && npm run db:generate && npm run db:migrate && npm run db:seed && npm run dev"
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: devsecops-dashboard
+    environment:
+      VITE_API_URL: http://localhost:3001/api/v1
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+    volumes:
+      - ./dashboard:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+

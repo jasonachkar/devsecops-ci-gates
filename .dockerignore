@@ -1,0 +1,33 @@
+# Apple metadata - MUST be first
+._*
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build artifacts
+dist/
+build/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

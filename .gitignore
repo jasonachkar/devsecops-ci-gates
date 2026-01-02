@@ -1,0 +1,88 @@
+# DevSecOps Security Gates - .gitignore
+
+# Operating System - Apple metadata files
+.DS_Store
+._*
+.AppleDouble
+.LSOverride
+Icon
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-*
+*.code-workspace
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+.vs/
+
+# Reports (except samples)
+reports/*.json
+reports/*.sarif
+reports/*.md
+reports/*.html
+reports/*.xml
+!reports/samples/
+!reports/.gitkeep
+
+# Security tool outputs
+.semgrep/
+.trivy/
+gitleaks-report.json
+dependency-check-report.json
+checkov-report.sarif
+codeql-results.sarif
+
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/*.tfvars
+!**/*.tfvars.example
+
+# Docker
+*.tar
+*.tar.gz
+
+# Secrets and credentials (explicit protection)
+*.key
+*.pem
+*.p12
+*.pfx
+.env
+.env.local
+.env.*.local
+secrets/
+credentials.json
+config.local.*
+
+# Build artifacts
+dist/
+build/
+*.log
+*.pid
+
+# Apple metadata files (prevent from being created)
+._*
+.DS_Store

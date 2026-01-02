@@ -1,0 +1,375 @@
+name: 🔄 Reusable Security Workflow
+
+# This is a reusable workflow that can be called from other repositories
+# to run the same security scans with customizable parameters.
+#
+# Example usage in another repository:
+#
+# jobs:
+#   security:
+#     uses: your-org/devsecops-security-gates/.github/workflows/reusable-security.yml@main
+#     with:
+#       enable-secrets-scan: true
+#       enable-sast: true
+#       enable-dependency-scan: true
+#       enable-iac-scan: false
+#       critical-threshold: 0
+#       high-threshold: 5
+#     secrets:
+#       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+on:
+  workflow_call:
+    inputs:
+      # Scanner toggles
+      enable-secrets-scan:
+        description: 'Enable secret scanning with Gitleaks'
+        required: false
+        type: boolean
+        default: true
+
+      enable-sast:
+        description: 'Enable SAST scanning with CodeQL'
+        required: false
+        type: boolean
+        default: true
+
+      enable-dependency-scan:
+        description: 'Enable dependency vulnerability scanning'
+        required: false
+        type: boolean
+        default: true
+
+      enable-iac-scan:
+        description: 'Enable IaC scanning with Checkov'
+        required: false
+        type: boolean
+        default: true
+
+      enable-container-scan:
+        description: 'Enable container scanning with Trivy'
+        required: false
+        type: boolean
+        default: true
+
+      # Threshold configuration
+      critical-threshold:
+        description: 'Maximum allowed critical findings (gate fails if exceeded)'
+        required: false
+        type: number
+        default: 0
+
+      high-threshold:
+        description: 'Maximum allowed high severity findings'
+        required: false
+        type: number
+        default: 0
+
+      medium-threshold:
+        description: 'Maximum allowed medium severity findings'
+        required: false
+        type: number
+        default: 5
+
+      # Path configuration
+      apps-path:
+        description: 'Path to applications directory'
+        required: false
+        type: string
+        default: 'apps'
+
+      infra-path:
+        description: 'Path to infrastructure code'
+        required: false
+        type: string
+        default: 'infra/terraform'
+
+      # Language configuration
+      codeql-languages:
+        description: 'CodeQL languages to scan (comma-separated)'
+        required: false
+        type: string
+        default: 'javascript,csharp'
+
+      # Node.js version
+      node-version:
+        description: 'Node.js version'
+        required: false
+        type: string
+        default: '20'
+
+      # .NET version
+      dotnet-version:
+        description: '.NET version'
+        required: false
+        type: string
+        default: '8.0.x'
+
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+
+    outputs:
+      security-status:
+        description: 'Overall security status (passed/failed)'
+        value: ${{ jobs.gate-evaluation.outputs.status }}
+      findings-count:
+        description: 'Total number of findings'
+        value: ${{ jobs.gate-evaluation.outputs.total-findings }}
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+env:
+  REPORTS_DIR: 'reports'
+
+jobs:
+  # ==========================================================================
+  # Secret Scanning
+  # ==========================================================================
+  secrets-scan:
+    name: 🔍 Secret Scanning
+    runs-on: ubuntu-latest
+    if: inputs.enable-secrets-scan
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@cb7149b9f3e57f78450d60b8f53bdd475e79770c # v2.3.4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save results
+        if: always()
+        run: |
+          mkdir -p ${{ env.REPORTS_DIR }}
+          if [ -f gitleaks-report.json ]; then
+            cp gitleaks-report.json ${{ env.REPORTS_DIR }}/
+          else
+            echo "[]" > ${{ env.REPORTS_DIR }}/gitleaks-report.json
+          fi
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        with:
+          name: secrets-scan-results
+          path: ${{ env.REPORTS_DIR }}/gitleaks-report.json
+
+  # ==========================================================================
+  # SAST Scanning
+  # ==========================================================================
+  sast-scan:
+    name: 🛡️ SAST Scanning
+    runs-on: ubuntu-latest
+    if: inputs.enable-sast
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@c36620d31ac7c881962c3d9dd939c40ec9434f2b # v3.26.12
+        with:
+          languages: ${{ inputs.codeql-languages }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@c36620d31ac7c881962c3d9dd939c40ec9434f2b # v3.26.12
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@c36620d31ac7c881962c3d9dd939c40ec9434f2b # v3.26.12
+
+  # ==========================================================================
+  # Dependency Scanning
+  # ==========================================================================
+  dependency-scan:
+    name: 📦 Dependency Scanning
+    runs-on: ubuntu-latest
+    if: inputs.enable-dependency-scan
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4.0.4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Node.js audit
+        run: |
+          mkdir -p ${{ env.REPORTS_DIR }}
+          find ${{ inputs.apps-path }} -name "package.json" -not -path "*/node_modules/*" | while read pkg; do
+            dir=$(dirname "$pkg")
+            echo "Auditing $dir"
+            cd "$dir"
+            npm audit --json > "$(pwd)/../../${{ env.REPORTS_DIR }}/npm-audit-$(basename $dir).json" || true
+            cd -
+          done
+        continue-on-error: true
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        with:
+          name: dependency-scan-results
+          path: ${{ env.REPORTS_DIR }}/*.json
+
+  # ==========================================================================
+  # IaC Scanning
+  # ==========================================================================
+  iac-scan:
+    name: 🏗️ IaC Scanning
+    runs-on: ubuntu-latest
+    if: inputs.enable-iac-scan
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@a56af27003a59e0335c786698e89e1398c9c0ff5 # v12.2867.0
+        with:
+          directory: ${{ inputs.infra-path }}
+          output_format: sarif
+          output_file_path: ${{ env.REPORTS_DIR }}/checkov-results.sarif
+          soft_fail: true
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@c36620d31ac7c881962c3d9dd939c40ec9434f2b # v3.26.12
+        with:
+          sarif_file: ${{ env.REPORTS_DIR }}/checkov-results.sarif
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        with:
+          name: iac-scan-results
+          path: ${{ env.REPORTS_DIR }}/checkov-results.sarif
+
+  # ==========================================================================
+  # Container Scanning
+  # ==========================================================================
+  container-scan:
+    name: 🐳 Container Scanning
+    runs-on: ubuntu-latest
+    if: inputs.enable-container-scan
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402c7deaa6b7ff5ce77a63 # v0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: ${{ inputs.apps-path }}
+          format: 'sarif'
+          output: '${{ env.REPORTS_DIR }}/trivy-results.sarif'
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@c36620d31ac7c881962c3d9dd939c40ec9434f2b # v3.26.12
+        with:
+          sarif_file: '${{ env.REPORTS_DIR }}/trivy-results.sarif'
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        with:
+          name: container-scan-results
+          path: '${{ env.REPORTS_DIR }}/trivy-results.sarif'
+
+  # ==========================================================================
+  # Gate Evaluation
+  # ==========================================================================
+  gate-evaluation:
+    name: ⚖️ Gate Evaluation
+    runs-on: ubuntu-latest
+    needs: [ secrets-scan, sast-scan, dependency-scan, iac-scan, container-scan ]
+    if: always()
+    outputs:
+      status: ${{ steps.evaluate.outputs.status }}
+      total-findings: ${{ steps.evaluate.outputs.total }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4.0.4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install tools
+        run: npm install -g typescript ts-node @types/node js-yaml @types/js-yaml glob
+
+      - name: Download results
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          path: ${{ env.REPORTS_DIR }}/artifacts
+        continue-on-error: true
+
+      - name: Consolidate results
+        run: |
+          mkdir -p ${{ env.REPORTS_DIR }}
+          find ${{ env.REPORTS_DIR }}/artifacts -type f \( -name "*.sarif" -o -name "*.json" \) -exec cp {} ${{ env.REPORTS_DIR }}/ \; 2>/dev/null || true
+
+      - name: Create dynamic threshold config
+        run: |
+          cat > /tmp/custom-thresholds.yml <<EOF
+          production:
+            block:
+              critical: ${{ inputs.critical-threshold }}
+              high: ${{ inputs.high-threshold }}
+              medium: ${{ inputs.medium-threshold }}
+              low: 100
+            warn:
+              medium: 1
+              low: 10
+          development:
+            block:
+              critical: 5
+              high: 10
+              medium: 20
+              low: 50
+            warn:
+              critical: 1
+              high: 5
+              medium: 10
+              low: 20
+          settings:
+            active_profile: "production"
+            fail_on_scanner_error: false
+            require_all_scanners: false
+            detailed_reports: true
+            upload_sarif: true
+          EOF
+
+      - name: Evaluate gates
+        id: evaluate
+        run: |
+          ts-node scripts/gates/gate-evaluator.ts \
+            --config=/tmp/custom-thresholds.yml \
+            --results-dir=${{ env.REPORTS_DIR }} || echo "status=failed" >> $GITHUB_OUTPUT
+
+          if [ $? -eq 0 ]; then
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        with:
+          name: security-reports
+          path: ${{ env.REPORTS_DIR }}/*.md

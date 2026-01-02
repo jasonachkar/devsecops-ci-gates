@@ -1,0 +1,28 @@
+# CODEOWNERS - Define code ownership for automated review requests
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners (fallback)
+*                                   @devsecops-team
+
+# Security workflows and configurations
+/.github/workflows/                 @security-team @devsecops-team
+/scripts/gates/                     @security-team @devsecops-team
+/scripts/gates/thresholds.yml       @security-team
+
+# Infrastructure as Code
+/infra/                             @infrastructure-team @security-team
+
+# Application code
+/apps/node-api/                     @backend-team @security-team
+/apps/dotnet-api/                   @backend-team @security-team
+
+# Dockerfiles require security review
+Dockerfile                          @security-team @infrastructure-team
+*.Dockerfile                        @security-team @infrastructure-team
+
+# Documentation
+/README.md                          @devsecops-team
+/docs/                              @devsecops-team
+
+# Dependabot and security configs
+/.github/dependabot.yml             @security-team

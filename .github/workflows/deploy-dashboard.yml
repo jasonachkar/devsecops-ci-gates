@@ -1,0 +1,104 @@
+name: 🚀 Deploy Dashboard
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'dashboard/**'
+      - '.github/workflows/deploy-dashboard.yml'
+  workflow_dispatch: # Allow manual trigger
+
+# Least privilege permissions
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Cancel in-progress runs for the same workflow
+concurrency:
+  group: deploy-dashboard-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ==========================================================================
+  # Job 1: Build Dashboard
+  # ==========================================================================
+  build:
+    name: 🏗️ Build Dashboard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4.0.4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        working-directory: dashboard
+        run: npm ci
+
+      - name: Copy sample data for demo
+        run: |
+          mkdir -p dashboard/public/data
+          cp reports/samples/sample-results.json dashboard/public/data/latest.json
+
+      - name: Build dashboard
+        working-directory: dashboard
+        run: npm run build
+        env:
+          VITE_GITHUB_REPO: ${{ github.repository }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        with:
+          name: dashboard-build
+          path: dashboard/dist
+          retention-days: 7
+
+  # ==========================================================================
+  # Job 2: Deploy to GitHub Pages
+  # ==========================================================================
+  deploy:
+    name: 🚀 Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+      pages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: dashboard-build
+          path: dashboard/dist
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dashboard/dist
+          publish_branch: gh-pages
+          destination_dir: .
+          keep_files: true
+          commit_message: 'Deploy dashboard from ${{ github.sha }}'
+
+      - name: Job summary
+        run: |
+          echo "## 🎉 Dashboard Deployed Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The dashboard has been deployed to GitHub Pages." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Dashboard URL**: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

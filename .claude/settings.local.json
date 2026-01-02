@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(npm create:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)"
+    ]
+  }
+}

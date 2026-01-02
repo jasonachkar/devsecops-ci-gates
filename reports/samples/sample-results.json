@@ -1,0 +1,179 @@
+{
+  "metadata": {
+    "timestamp": "2025-01-15T10:30:45.123Z",
+    "repository": "example-org/devsecops-security-gates",
+    "branch": "main",
+    "commit": "abc123def456",
+    "triggeredBy": "dependabot[bot]"
+  },
+  "summary": {
+    "total": 47,
+    "bySeverity": {
+      "critical": 3,
+      "high": 8,
+      "medium": 18,
+      "low": 18,
+      "info": 0
+    },
+    "byTool": {
+      "gitleaks": 2,
+      "codeql": 15,
+      "npm-audit": 12,
+      "dotnet-vulnerable": 5,
+      "checkov": 8,
+      "trivy": 5
+    }
+  },
+  "findings": [
+    {
+      "tool": "gitleaks",
+      "category": "secrets",
+      "severity": "critical",
+      "ruleId": "generic-api-key",
+      "title": "AWS API Key detected",
+      "file": "apps/node-api/src/server.ts",
+      "line": 42,
+      "message": "Secret detected: AKIA...",
+      "fingerprint": "abc123"
+    },
+    {
+      "tool": "gitleaks",
+      "category": "secrets",
+      "severity": "critical",
+      "ruleId": "hardcoded-password",
+      "title": "Hardcoded password in source",
+      "file": "infra/terraform/variables.tf",
+      "line": 78,
+      "message": "Secret detected: ChangeMe123!",
+      "fingerprint": "def456"
+    },
+    {
+      "tool": "npm-audit",
+      "category": "dependency",
+      "severity": "critical",
+      "ruleId": "CVE-2024-12345",
+      "title": "jsonwebtoken: Authentication bypass vulnerability",
+      "file": "package.json",
+      "cwe": "CWE-287",
+      "cvss": 9.8,
+      "message": "https://nvd.nist.gov/vuln/detail/CVE-2024-12345"
+    },
+    {
+      "tool": "codeql",
+      "category": "security",
+      "severity": "high",
+      "ruleId": "js/sql-injection",
+      "title": "Database query built from user-controlled sources",
+      "file": "apps/node-api/src/server.ts",
+      "line": 95,
+      "cwe": "CWE-89",
+      "message": "This query depends on a user-provided value.",
+      "fingerprint": "ghi789"
+    },
+    {
+      "tool": "codeql",
+      "category": "security",
+      "severity": "high",
+      "ruleId": "js/command-injection",
+      "title": "Unsafe shell command constructed from library input",
+      "file": "apps/node-api/src/server.ts",
+      "line": 110,
+      "cwe": "CWE-78",
+      "message": "This command depends on a user-provided value.",
+      "fingerprint": "jkl012"
+    },
+    {
+      "tool": "codeql",
+      "category": "security",
+      "severity": "high",
+      "ruleId": "js/clear-text-logging",
+      "title": "Clear-text logging of sensitive information",
+      "file": "apps/node-api/src/server.ts",
+      "line": 165,
+      "cwe": "CWE-532",
+      "message": "Sensitive data is logged in clear text.",
+      "fingerprint": "mno345"
+    },
+    {
+      "tool": "codeql",
+      "category": "security",
+      "severity": "high",
+      "ruleId": "cs/web/debug-binary",
+      "title": "Deployment of debug binary",
+      "file": "apps/dotnet-api/Program.cs",
+      "line": 28,
+      "message": "Debug configuration should not be used in production.",
+      "fingerprint": "pqr678"
+    },
+    {
+      "tool": "codeql",
+      "category": "security",
+      "severity": "high",
+      "ruleId": "cs/hardcoded-credentials",
+      "title": "Hard-coded credentials",
+      "file": "apps/dotnet-api/Program.cs",
+      "line": 35,
+      "cwe": "CWE-798",
+      "message": "Credentials are hard-coded in the source code.",
+      "fingerprint": "stu901"
+    },
+    {
+      "tool": "checkov",
+      "category": "iac",
+      "severity": "high",
+      "ruleId": "CKV_AWS_23",
+      "title": "Security group rule allows ingress from 0.0.0.0/0",
+      "file": "infra/terraform/main.tf",
+      "line": 52,
+      "cwe": "CWE-284",
+      "message": "Security group allows unrestricted ingress access.",
+      "fingerprint": "vwx234"
+    },
+    {
+      "tool": "codeql",
+      "category": "security",
+      "severity": "medium",
+      "ruleId": "js/weak-cryptographic-algorithm",
+      "title": "Use of a broken or weak cryptographic algorithm",
+      "file": "apps/node-api/src/server.ts",
+      "line": 125,
+      "cwe": "CWE-327",
+      "message": "MD5 is cryptographically broken and should not be used.",
+      "fingerprint": "yza567"
+    },
+    {
+      "tool": "checkov",
+      "category": "iac",
+      "severity": "medium",
+      "ruleId": "CKV_AWS_18",
+      "title": "S3 Bucket does not have logging enabled",
+      "file": "infra/terraform/main.tf",
+      "line": 135,
+      "message": "Enable S3 bucket access logging.",
+      "fingerprint": "bcd890"
+    },
+    {
+      "tool": "checkov",
+      "category": "iac",
+      "severity": "medium",
+      "ruleId": "CKV_AWS_19",
+      "title": "Ensure all data stored in S3 is encrypted",
+      "file": "infra/terraform/main.tf",
+      "line": 135,
+      "cwe": "CWE-311",
+      "message": "S3 bucket does not have encryption enabled.",
+      "fingerprint": "efg123"
+    },
+    {
+      "tool": "trivy",
+      "category": "container",
+      "severity": "low",
+      "ruleId": "CVE-2024-66666",
+      "title": "Alpine base image: Minor vulnerability",
+      "file": "apps/node-api/Dockerfile",
+      "cvss": 2.3,
+      "message": "Low severity vulnerability in Alpine Linux.",
+      "fingerprint": "hij456"
+    }
+  ]
+}

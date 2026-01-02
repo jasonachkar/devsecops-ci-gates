@@ -1,0 +1,288 @@
+name: 🌙 Nightly Security Scan
+
+on:
+  schedule:
+    # Run at 2 AM UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Manual trigger
+
+permissions:
+  contents: read
+  security-events: write
+  issues: write # For creating issues on critical findings
+
+env:
+  NODE_VERSION: '20'
+  DOTNET_VERSION: '8.0.x'
+  REPORTS_DIR: 'reports-nightly'
+
+jobs:
+  # ==========================================================================
+  # Comprehensive Nightly Scan
+  # ==========================================================================
+  nightly-scan:
+    name: 🔍 Comprehensive Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          fetch-depth: 0
+
+      - name: Create reports directory
+        run: mkdir -p ${{ env.REPORTS_DIR }}
+
+      # ========================================================================
+      # Secret Scanning
+      # ========================================================================
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@cb7149b9f3e57f78450d60b8f53bdd475e79770c # v2.3.4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Save Gitleaks results
+        if: always()
+        run: |
+          if [ -f gitleaks-report.json ]; then
+            cp gitleaks-report.json ${{ env.REPORTS_DIR }}/
+          else
+            echo "[]" > ${{ env.REPORTS_DIR }}/gitleaks-report.json
+          fi
+
+      # ========================================================================
+      # SAST Scanning
+      # ========================================================================
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@c36620d31ac7c881962c3d9dd939c40ec9434f2b # v3.26.12
+        with:
+          languages: javascript,csharp
+          queries: security-extended,security-and-quality
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@6bd8b7f7774af54e05809fcc5431931b3eb1ddee # v4.0.1
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Build .NET project
+        run: |
+          cd apps/dotnet-api
+          dotnet restore
+          dotnet build --no-restore --configuration Release
+        continue-on-error: true
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@c36620d31ac7c881962c3d9dd939c40ec9434f2b # v3.26.12
+        with:
+          upload: true
+        continue-on-error: true
+
+      # ========================================================================
+      # Dependency Scanning
+      # ========================================================================
+      - name: Setup Node.js
+        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4.0.4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Node.js dependency audit
+        run: |
+          cd apps/node-api
+          npm ci || true
+          npm audit --json > ../../${{ env.REPORTS_DIR }}/npm-audit.json || true
+        continue-on-error: true
+
+      - name: .NET vulnerability check
+        run: |
+          cd apps/dotnet-api
+          dotnet restore || true
+          dotnet list package --vulnerable --include-transitive --format json > ../../${{ env.REPORTS_DIR }}/dotnet-vulnerable.json || true
+        continue-on-error: true
+
+      # ========================================================================
+      # IaC Scanning
+      # ========================================================================
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@a56af27003a59e0335c786698e89e1398c9c0ff5 # v12.2867.0
+        with:
+          directory: infra/terraform
+          framework: terraform
+          output_format: sarif,json,cli
+          output_file_path: ${{ env.REPORTS_DIR }}/checkov-results.sarif
+          soft_fail: true
+        continue-on-error: true
+
+      - name: Upload Checkov SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@c36620d31ac7c881962c3d9dd939c40ec9434f2b # v3.26.12
+        with:
+          sarif_file: ${{ env.REPORTS_DIR }}/checkov-results.sarif
+          category: checkov-nightly
+        continue-on-error: true
+
+      # ========================================================================
+      # Container Scanning
+      # ========================================================================
+      - name: Run Trivy on Node.js app
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402c7deaa6b7ff5ce77a63 # v0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: 'apps/node-api'
+          format: 'sarif'
+          output: '${{ env.REPORTS_DIR }}/trivy-node-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+        continue-on-error: true
+
+      - name: Run Trivy on .NET app
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402c7deaa6b7ff5ce77a63 # v0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: 'apps/dotnet-api'
+          format: 'sarif'
+          output: '${{ env.REPORTS_DIR }}/trivy-dotnet-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+        continue-on-error: true
+
+      - name: Upload Trivy SARIFs
+        if: always()
+        run: |
+          for sarif in ${{ env.REPORTS_DIR }}/trivy-*.sarif; do
+            if [ -f "$sarif" ]; then
+              echo "Uploading $sarif"
+            fi
+          done
+        continue-on-error: true
+
+      # ========================================================================
+      # Generate Reports
+      # ========================================================================
+      - name: Install TypeScript tools
+        run: |
+          npm install -g typescript ts-node @types/node js-yaml @types/js-yaml glob
+
+      - name: Normalize results
+        run: |
+          ts-node scripts/helpers/normalize-results.ts \
+            --results-dir=${{ env.REPORTS_DIR }} \
+            --output=${{ env.REPORTS_DIR }}/normalized.json
+        continue-on-error: true
+
+      - name: Generate security report
+        run: |
+          ts-node scripts/gates/report-writer.ts \
+            --input=${{ env.REPORTS_DIR }}/normalized.json \
+            --output=${{ env.REPORTS_DIR }}/nightly-security-report.md
+        continue-on-error: true
+
+      - name: Evaluate gates (informational only)
+        run: |
+          ts-node scripts/gates/gate-evaluator.ts \
+            --config=scripts/gates/thresholds.yml \
+            --results-dir=${{ env.REPORTS_DIR }} || true
+
+      # ========================================================================
+      # Create Issue for Critical Findings
+      # ========================================================================
+      - name: Check for critical findings
+        id: critical
+        run: |
+          if [ -f "${{ env.REPORTS_DIR }}/normalized.json" ]; then
+            critical_count=$(jq '[.findings[] | select(.severity == "critical")] | length' ${{ env.REPORTS_DIR }}/normalized.json)
+            echo "critical_count=$critical_count" >> $GITHUB_OUTPUT
+
+            if [ "$critical_count" -gt "0" ]; then
+              echo "🚨 Found $critical_count critical findings"
+              echo "create_issue=true" >> $GITHUB_OUTPUT
+            else
+              echo "create_issue=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "create_issue=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create issue for critical findings
+        if: steps.critical.outputs.create_issue == 'true'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('${{ env.REPORTS_DIR }}/nightly-security-report.md', 'utf8');
+            const criticalCount = '${{ steps.critical.outputs.critical_count }}';
+
+            const issueBody = `## 🚨 Nightly Security Scan - Critical Findings
+
+            **Date:** ${new Date().toISOString().split('T')[0]}
+            **Critical Findings:** ${criticalCount}
+
+            ${report}
+
+            ---
+            *This issue was automatically created by the nightly security scan.*
+            *Please review and address these findings as soon as possible.*
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Security Alert: ${criticalCount} Critical Finding(s) - ${new Date().toISOString().split('T')[0]}`,
+              body: issueBody,
+              labels: ['security', 'critical', 'automated']
+            });
+
+      # ========================================================================
+      # Upload Artifacts
+      # ========================================================================
+      - name: Upload nightly reports
+        if: always()
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        with:
+          name: nightly-security-reports-${{ github.run_number }}
+          path: |
+            ${{ env.REPORTS_DIR }}/*.json
+            ${{ env.REPORTS_DIR }}/*.sarif
+            ${{ env.REPORTS_DIR }}/*.md
+          retention-days: 90
+
+      - name: Add to job summary
+        if: always()
+        run: |
+          echo "# 🌙 Nightly Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "${{ env.REPORTS_DIR }}/nightly-security-report.md" ]; then
+            cat ${{ env.REPORTS_DIR }}/nightly-security-report.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Report generation failed. Check logs for details." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ==========================================================================
+  # Trend Analysis (Future Enhancement)
+  # ==========================================================================
+  trend-analysis:
+    name: 📈 Security Trend Analysis
+    runs-on: ubuntu-latest
+    needs: nightly-scan
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Download previous reports
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          pattern: nightly-security-reports-*
+          path: previous-reports
+        continue-on-error: true
+
+      - name: Generate trend report
+        run: |
+          echo "# 📈 Security Trends" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Trend analysis would compare findings over time." >> $GITHUB_STEP_SUMMARY
+          echo "This is a placeholder for future enhancement." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Metrics to track:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Total findings by severity over time" >> $GITHUB_STEP_SUMMARY
+          echo "- Time to remediation" >> $GITHUB_STEP_SUMMARY
+          echo "- New vs. resolved findings" >> $GITHUB_STEP_SUMMARY
+          echo "- Most common vulnerability types" >> $GITHUB_STEP_SUMMARY

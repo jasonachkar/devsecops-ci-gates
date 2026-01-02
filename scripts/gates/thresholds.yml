@@ -1,0 +1,102 @@
+# Security Gate Thresholds Configuration
+# This file defines the failure and warning thresholds for security findings
+# by severity level across all scanning tools.
+
+# Threshold Configuration Format:
+# block: Security gate will FAIL if these thresholds are exceeded
+# warn: Security gate will WARN but continue if these thresholds are exceeded
+
+# Severity Levels: critical, high, medium, low, info
+
+# Production-Ready Default Configuration (Strict)
+production:
+  block:
+    critical: 0  # No critical vulnerabilities allowed
+    high: 0      # No high severity findings allowed
+    medium: 5    # Allow up to 5 medium findings (requires remediation plan)
+    low: 20      # Allow up to 20 low findings
+  warn:
+    medium: 1    # Warn if any medium findings detected
+    low: 10      # Warn if more than 10 low findings
+
+# Development Configuration (Relaxed for testing)
+development:
+  block:
+    critical: 1  # Allow 1 critical for testing/POC
+    high: 3      # Allow up to 3 high severity
+    medium: 10   # Allow up to 10 medium
+    low: 50      # Allow up to 50 low
+  warn:
+    critical: 1
+    high: 1
+    medium: 5
+    low: 20
+
+# Tool-Specific Overrides (Optional)
+# These override the global thresholds for specific tools
+tool_overrides:
+  # Gitleaks - Zero tolerance for secrets
+  gitleaks:
+    block:
+      critical: 0
+      high: 0
+      medium: 0
+      low: 0
+
+  # Container scanning - Strict for production images
+  trivy:
+    block:
+      critical: 0
+      high: 0
+      medium: 10
+      low: 50
+
+  # IaC scanning - Strict for infrastructure
+  checkov:
+    block:
+      critical: 0
+      high: 1  # Allow 1 high for terraform best practices
+      medium: 5
+      low: 20
+
+  # SAST - Moderate strictness
+  codeql:
+    block:
+      critical: 0
+      high: 2
+      medium: 10
+      low: 30
+
+  # Dependency scanning - Critical CVEs only
+  dependencies:
+    block:
+      critical: 0
+      high: 3  # Allow some high if no patch available
+      medium: 15
+      low: 100
+
+# Exemptions (Use sparingly and document)
+# Format: { tool: string, ruleId: string, reason: string, expiresAfter: ISO date }
+exemptions: []
+  # Example:
+  # - tool: "checkov"
+  #   ruleId: "CKV_AWS_23"
+  #   reason: "Security group restricted by network ACL"
+  #   expiresAfter: "2025-06-30"
+
+# Global Settings
+settings:
+  # Which environment profile to use (production | development)
+  active_profile: "production"
+
+  # Fail on scanner errors (recommended: true)
+  fail_on_scanner_error: true
+
+  # Require all scanners to complete successfully
+  require_all_scanners: true
+
+  # Generate detailed reports
+  detailed_reports: true
+
+  # Upload SARIF to GitHub Security tab
+  upload_sarif: true
