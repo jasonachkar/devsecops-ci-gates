@@ -1,65 +1,50 @@
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import HomePage from './pages/HomePage';
-import { CloudSecurityPage } from './pages/CloudSecurityPage';
-import { Shield, Cloud, BarChart3 } from 'lucide-react';
-import { cn } from './utils/cn';
+/**
+ * Main App Component
+ * Enterprise-grade application structure
+ */
 
-function Navigation() {
-  const location = useLocation();
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { QueryProvider } from './app/providers/QueryProvider';
+import { AuthProvider } from './app/providers/AuthProvider';
+import { WebSocketProvider } from './app/providers/WebSocketProvider';
+import { ErrorBoundary } from './shared/components/ErrorBoundary';
+import { Header } from './shared/components/layout/Header';
+import { DashboardPage } from './features/dashboard/pages/DashboardPage';
 
-  const navItems = [
-    { path: '/', label: 'Security Dashboard', icon: Shield },
-    { path: '/cloud', label: 'Cloud Security', icon: Cloud },
-    { path: '/trends', label: 'Trends & Analytics', icon: BarChart3 },
-  ];
-
-  return (
-    <nav className="border-b border-dark-border-primary bg-dark-bg-secondary/80 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-purple-400" />
-            <h1 className="text-xl font-bold text-dark-text-primary">DevSecOps Dashboard</h1>
-          </div>
-          <div className="flex items-center gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors',
-                    isActive
-                      ? 'bg-dark-bg-elevated text-dark-text-primary border border-dark-border-accent'
-                      : 'text-dark-text-secondary hover:text-dark-text-primary hover:bg-dark-bg-tertiary/50'
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </nav>
-  );
-}
+// Get base path from Vite config (for GitHub Pages deployment)
+// Handle both development and production scenarios
+const getBasePath = () => {
+  const base = import.meta.env.BASE_URL || '/';
+  // Remove trailing slash, but keep single slash for root
+  // If base is just '/', return '/', otherwise remove trailing slash
+  if (base === '/' || base === '') {
+    return '/';
+  }
+  return base.replace(/\/$/, '');
+};
 
 function App() {
+  const basePath = getBasePath();
+  
   return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-dark-bg-primary">
-        <Navigation />
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/cloud" element={<CloudSecurityPage />} />
-          <Route path="/trends" element={<HomePage />} />
-        </Routes>
-      </div>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <QueryProvider>
+        <AuthProvider>
+          <WebSocketProvider>
+            <BrowserRouter basename={basePath}>
+              <div className="min-h-screen bg-bg-primary">
+                <Header />
+                <main>
+                  <Routes>
+                    <Route path="/" element={<DashboardPage />} />
+                  </Routes>
+                </main>
+              </div>
+            </BrowserRouter>
+          </WebSocketProvider>
+        </AuthProvider>
+      </QueryProvider>
+    </ErrorBoundary>
   );
 }
 

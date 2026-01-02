@@ -1,54 +1,63 @@
 import type { LucideIcon } from 'lucide-react';
-import { GlassCard } from '../ui/GlassCard';
+import { TrendingUp, TrendingDown } from 'lucide-react';
+import { Card } from '../ui/Card';
 import { Sparkline } from '../charts/Sparkline';
+import { cn } from '../../utils/cn';
 
 interface KpiCardProps {
   icon: LucideIcon;
   label: string;
   value: number;
+  change: number; // percentage change
   color: string;
-  softColor: string;
-  trendData?: number[];
-  glow?: boolean;
+  trendData: number[];
 }
 
 export function KpiCard({
   icon: Icon,
   label,
   value,
+  change,
   color,
-  softColor,
   trendData,
-  glow = false,
 }: KpiCardProps) {
-  const sparklineData = trendData?.map((value, index) => ({ index, value })) || [];
+  const sparklineData = trendData.map((val, index) => ({ index, value: val }));
+  const isPositive = change >= 0;
+  const changeColor = isPositive ? 'text-semantic-success' : 'text-semantic-error';
 
   return (
-    <GlassCard
-      className="p-4"
-      elevation="md"
-      hover={true}
-      glow={glow ? 'critical' : undefined}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <span
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg"
-          style={{ backgroundColor: softColor }}
+    <Card className="p-5">
+      <div className="flex items-start justify-between mb-4">
+        <div
+          className="flex h-10 w-10 items-center justify-center rounded-lg"
+          style={{ backgroundColor: `${color}20` }}
         >
-          <Icon className="h-4 w-4" style={{ color }} />
-        </span>
-        <div className="flex-1 min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.25em] text-slate-500 truncate">
-            {label}
+          <Icon className="h-5 w-5" style={{ color }} />
+        </div>
+        {change !== 0 && (
+          <div className={cn('flex items-center gap-1 text-xs font-medium', changeColor)}>
+            {isPositive ? (
+              <TrendingUp className="h-3 w-3" />
+            ) : (
+              <TrendingDown className="h-3 w-3" />
+            )}
+            <span>{Math.abs(change).toFixed(1)}%</span>
           </div>
-          <div className="text-2xl font-semibold text-slate-900 mt-0.5">{value}</div>
+        )}
+      </div>
+
+      <div className="mb-4">
+        <div className="text-3xl font-bold text-dark-text-primary mb-1">{value}</div>
+        <div className="text-xs font-medium text-dark-text-secondary uppercase tracking-wide">
+          {label}
         </div>
       </div>
+
       {sparklineData.length > 0 && (
-        <div className="mt-3 h-8">
-          <Sparkline data={sparklineData} color={color} />
+        <div className="h-12 -mx-1">
+          <Sparkline data={sparklineData} color={color} height={48} />
         </div>
       )}
-    </GlassCard>
+    </Card>
   );
 }

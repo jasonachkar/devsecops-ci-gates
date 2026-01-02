@@ -103,9 +103,9 @@ export function ToolDistributionChart({ data }: ToolDistributionChartProps) {
 
             <Tooltip
               contentStyle={{
-                backgroundColor: '#0f0f0f',
+                backgroundColor: '#0E1117',
                 borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
                 padding: '10px 12px',
               }}
@@ -115,7 +115,7 @@ export function ToolDistributionChart({ data }: ToolDistributionChartProps) {
                 fontWeight: 500,
               }}
               labelStyle={{
-                color: '#a3a3a3',
+                color: 'rgba(255, 255, 255, 0.6)',
                 fontSize: 11,
                 fontWeight: 500,
                 marginBottom: '4px',

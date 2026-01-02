@@ -36,15 +36,20 @@ class WebSocketService {
   connect() {
     // Don't create new connection if already connected
     if (this.socket?.connected) {
+      console.log('WebSocket already connected');
       return;
     }
 
+    console.log('🔌 Attempting to connect to WebSocket at:', WS_URL);
+    
     // Create Socket.IO connection
     this.socket = io(WS_URL, {
-      transports: ['websocket'], // Use WebSocket transport only (no polling fallback)
+      transports: ['websocket', 'polling'], // Try websocket first, fallback to polling
       reconnection: true, // Automatically reconnect on disconnect
       reconnectionDelay: 1000, // Wait 1 second before reconnecting
       reconnectionAttempts: 5, // Try up to 5 times before giving up
+      timeout: 10000, // Connection timeout (increased to 10 seconds)
+      autoConnect: true,
     });
 
     /**
@@ -52,7 +57,7 @@ class WebSocketService {
      * @event connect
      */
     this.socket.on('connect', () => {
-      console.log('WebSocket connected');
+      console.log('✅ WebSocket connected successfully to:', WS_URL);
       this.emit('connected'); // Notify listeners
     });
 
@@ -70,7 +75,13 @@ class WebSocketService {
      * @event connect_error
      */
     this.socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
+      // Always log connection errors for debugging
+      console.warn('WebSocket connection error:', {
+        message: error.message,
+        type: error.type,
+        description: error.description,
+        wsUrl: WS_URL,
+      });
       this.emit('error', error); // Notify listeners
     });
 

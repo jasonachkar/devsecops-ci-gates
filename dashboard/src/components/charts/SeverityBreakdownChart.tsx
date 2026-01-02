@@ -70,20 +70,20 @@ export function SeverityBreakdownChart({
             strokeDasharray="3 3"
             stroke="rgba(255, 255, 255, 0.05)"
             vertical={false}
-            opacity={0.5}
+            opacity={0.3}
           />
 
           <XAxis
             dataKey="label"
-            tick={{ fill: '#a3a3a3', fontSize: 11, fontWeight: 500 }}
-            axisLine={{ stroke: 'rgba(255, 255, 255, 0.08)' }}
+            tick={{ fill: 'rgba(255, 255, 255, 0.6)', fontSize: 11, fontWeight: 500 }}
+            axisLine={{ stroke: 'rgba(255, 255, 255, 0.06)' }}
             tickLine={false}
             height={32}
           />
 
           <YAxis
-            tick={{ fill: '#a3a3a3', fontSize: 11, fontWeight: 500 }}
-            axisLine={{ stroke: 'rgba(255, 255, 255, 0.08)' }}
+            tick={{ fill: 'rgba(255, 255, 255, 0.6)', fontSize: 11, fontWeight: 500 }}
+            axisLine={{ stroke: 'rgba(255, 255, 255, 0.06)' }}
             tickLine={false}
             allowDecimals={false}
             width={36}
@@ -92,9 +92,9 @@ export function SeverityBreakdownChart({
           <Tooltip
             cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
             contentStyle={{
-              backgroundColor: '#0f0f0f',
+              backgroundColor: '#0E1117',
               borderRadius: '8px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
               padding: '10px 12px',
             }}
@@ -104,7 +104,7 @@ export function SeverityBreakdownChart({
               fontWeight: 500,
             }}
             labelStyle={{
-              color: '#a3a3a3',
+              color: 'rgba(255, 255, 255, 0.6)',
               fontSize: 11,
               fontWeight: 500,
               marginBottom: '4px',

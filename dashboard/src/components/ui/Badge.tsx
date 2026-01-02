@@ -1,45 +1,50 @@
-import type { LucideIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
 import { cn } from '../../utils/cn';
 
 interface BadgeProps {
-  children: ReactNode;
-  icon?: LucideIcon;
-  status?: 'passed' | 'failed' | 'warning' | 'info';
-  size?: 'sm' | 'md';
+  children: React.ReactNode;
+  variant?: 'success' | 'error' | 'warning' | 'info' | 'default';
   className?: string;
 }
 
-const statusClasses = {
-  passed: 'border-semantic-success-border bg-semantic-success-bg text-semantic-success',
-  failed: 'border-semantic-error-border bg-semantic-error-bg text-semantic-error',
-  warning: 'border-semantic-warning-border bg-semantic-warning-bg text-semantic-warning',
-  info: 'border-semantic-info-border bg-semantic-info-bg text-semantic-info',
-};
+export function Badge({ children, variant = 'default', className }: BadgeProps) {
+  const styles = {
+    success: {
+      backgroundColor: 'rgba(34, 197, 94, 0.1)',
+      color: '#22C55E',
+      borderColor: 'rgba(34, 197, 94, 0.2)',
+    },
+    error: {
+      backgroundColor: 'rgba(248, 81, 73, 0.1)',
+      color: '#F85149',
+      borderColor: 'rgba(248, 81, 73, 0.2)',
+    },
+    warning: {
+      backgroundColor: 'rgba(245, 158, 11, 0.1)',
+      color: '#F59E0B',
+      borderColor: 'rgba(245, 158, 11, 0.2)',
+    },
+    info: {
+      backgroundColor: 'rgba(88, 166, 255, 0.1)',
+      color: '#58A6FF',
+      borderColor: 'rgba(88, 166, 255, 0.2)',
+    },
+    default: {
+      backgroundColor: '#21262D',
+      color: '#8B949E',
+      borderColor: '#30363D',
+    },
+  };
 
-const sizeClasses = {
-  sm: 'px-2 py-0.5 text-xs font-medium',
-  md: 'px-2.5 py-1 text-xs font-medium',
-};
+  const style = styles[variant];
 
-export function Badge({
-  children,
-  icon: Icon,
-  status = 'info',
-  size = 'md',
-  className
-}: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-md border',
-        'transition-colors duration-150',
-        statusClasses[status],
-        sizeClasses[size],
+        'inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium',
         className
       )}
+      style={style}
     >
-      {Icon && <Icon className="h-3 w-3" />}
       {children}
     </span>
   );

@@ -147,12 +147,34 @@ export const useScanStore = create<ScanStore>((set, get) => {
           }
         } else {
           // Load from static file (fallback)
-          const response = await fetch('/devsecops-ci-cd-gates/data/latest.json');
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+          // Try multiple paths to work in both dev and production
+          const paths = [
+            '/data/latest.json',
+            '/devsecops-ci-cd-gates/data/latest.json',
+            './data/latest.json',
+          ];
+          
+          let lastError: Error | null = null;
+          for (const dataPath of paths) {
+            try {
+              console.log(`Trying to load data from: ${dataPath}`);
+              const response = await fetch(dataPath);
+              if (response.ok) {
+                const data = await response.json();
+                console.log('Successfully loaded data:', data);
+                set({ currentScan: data, loading: false });
+                return;
+              } else {
+                console.warn(`Failed to load ${dataPath}: ${response.status}`);
+                lastError = new Error(`HTTP ${response.status} for ${dataPath}`);
+              }
+            } catch (err) {
+              console.warn(`Error loading ${dataPath}:`, err);
+              lastError = err instanceof Error ? err : new Error(String(err));
+            }
           }
-          const data = await response.json();
-          set({ currentScan: data, loading: false });
+          
+          throw lastError || new Error('Could not load data from any path');
         }
       } catch (error) {
         set({

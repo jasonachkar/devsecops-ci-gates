@@ -36,7 +36,7 @@ export function GlassCard({
   hover = true,
 }: GlassCardProps) {
   const cardClasses = [
-    'relative rounded-2xl glass-panel',
+    'relative rounded-[16px] glass-panel',
     elevationClasses[elevation],
     className,
   ]

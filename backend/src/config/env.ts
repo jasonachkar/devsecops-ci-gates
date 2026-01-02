@@ -7,6 +7,7 @@
  * @module config/env
  */
 
+import 'dotenv/config';
 import { z } from 'zod';
 
 /**
