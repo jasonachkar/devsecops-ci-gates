@@ -26,7 +26,7 @@ WORKDIR /app
 
 # Install production dependencies only
 COPY package*.json ./
-RUN npm ci --only=production
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
 
 # Copy built files and Prisma
 COPY --from=builder /app/dist ./dist
@@ -49,5 +49,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 EXPOSE 3001
 
 CMD ["node", "dist/server.js"]
-
 
