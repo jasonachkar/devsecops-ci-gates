@@ -64,14 +64,15 @@ export function RepositorySelector({ value, onChange }: RepositorySelectorProps)
   return (
     <Select
       value={value || repositories[0]?.id || ''}
-      onValueChange={onChange}
-      options={repositories.map((repo) => ({
-        value: repo.id,
-        label: repo.name,
-      }))}
+      onChange={(event) => onChange(event.target.value)}
       className="w-64"
-    />
+    >
+      {repositories.map((repo) => (
+        <option key={repo.id} value={repo.id}>
+          {repo.name}
+        </option>
+      ))}
+    </Select>
   );
 }
-
 

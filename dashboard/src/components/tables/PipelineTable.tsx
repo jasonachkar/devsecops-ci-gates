@@ -2,7 +2,6 @@ import { format } from 'date-fns';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { cn } from '../../utils/cn';
 import type { PipelineRun } from '../../data/mockDashboardData';
 
 interface PipelineTableProps {
