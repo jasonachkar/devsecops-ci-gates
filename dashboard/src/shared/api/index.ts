@@ -10,4 +10,5 @@ export * from './services/findings';
 export * from './services/repositories';
 export * from './services/trends';
 export * from './services/compliance';
+export * from './services/github';
 

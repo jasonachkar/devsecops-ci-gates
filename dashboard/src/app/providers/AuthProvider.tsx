@@ -3,7 +3,8 @@
  * Manages authentication state and auto-login for development
  */
 
-import { useEffect, useState, ReactNode, createContext, useContext } from 'react';
+import { useEffect, useState, createContext, useContext } from 'react';
+import type { ReactNode } from 'react';
 import { authApi } from '../../shared/api/services/auth';
 import { apiClient } from '../../shared/api/client';
 
@@ -96,4 +97,3 @@ export function AuthProvider({ children }: AuthProviderProps) {
     </AuthContext.Provider>
   );
 }
-

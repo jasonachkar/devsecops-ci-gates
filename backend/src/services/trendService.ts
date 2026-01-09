@@ -78,15 +78,31 @@ export class TrendService {
 
     if (scans.length === 0) {
       // No scans, create empty trend
-      return prisma.scanTrend.upsert({
+      // Use findFirst + create/update pattern for compound unique constraint
+      const existing = await prisma.scanTrend.findFirst({
         where: {
-          repositoryId_date: {
-            repositoryId,
-            date: startOfDay,
-          },
+          repositoryId,
+          date: startOfDay,
         },
-        update: {},
-        create: {
+      });
+
+      if (existing) {
+        return prisma.scanTrend.update({
+          where: { id: existing.id },
+          data: {
+            totalFindings: 0,
+            criticalCount: 0,
+            highCount: 0,
+            mediumCount: 0,
+            lowCount: 0,
+            infoCount: 0,
+            scansCount: 0,
+          },
+        });
+      }
+
+      return prisma.scanTrend.create({
+        data: {
           repositoryId,
           date: startOfDay,
           totalFindings: 0,
@@ -125,24 +141,31 @@ export class TrendService {
     // Calculate averages (for multiple scans per day)
     const avgFindings = Math.round(aggregated.totalFindings / aggregated.scansCount);
 
-    // Upsert trend record
-    return prisma.scanTrend.upsert({
+    // Use findFirst + create/update pattern for compound unique constraint
+    const existing = await prisma.scanTrend.findFirst({
       where: {
-        repositoryId_date: {
-          repositoryId,
-          date: startOfDay,
+        repositoryId,
+        date: startOfDay,
+      },
+    });
+
+    if (existing) {
+      return prisma.scanTrend.update({
+        where: { id: existing.id },
+        data: {
+          totalFindings: avgFindings,
+          criticalCount: aggregated.criticalCount,
+          highCount: aggregated.highCount,
+          mediumCount: aggregated.mediumCount,
+          lowCount: aggregated.lowCount,
+          infoCount: aggregated.infoCount,
+          scansCount: aggregated.scansCount,
         },
-      },
-      update: {
-        totalFindings: avgFindings,
-        criticalCount: aggregated.criticalCount,
-        highCount: aggregated.highCount,
-        mediumCount: aggregated.mediumCount,
-        lowCount: aggregated.lowCount,
-        infoCount: aggregated.infoCount,
-        scansCount: aggregated.scansCount,
-      },
-      create: {
+      });
+    }
+
+    return prisma.scanTrend.create({
+      data: {
         repositoryId,
         date: startOfDay,
         totalFindings: avgFindings,

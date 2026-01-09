@@ -3,7 +3,8 @@
  * Manages WebSocket connection and provides real-time updates
  */
 
-import { useEffect, useState, ReactNode, createContext, useContext } from 'react';
+import { useEffect, useState, createContext, useContext } from 'react';
+import type { ReactNode } from 'react';
 import { wsService } from '../../services/websocket';
 
 interface WebSocketContextType {
@@ -65,4 +66,3 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     </WebSocketContext.Provider>
   );
 }
-

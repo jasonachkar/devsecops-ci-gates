@@ -16,6 +16,8 @@ import authRoutes from './auth';
 import remediationRoutes from './remediation';
 import sbomRoutes from './sbom';
 import repositoriesRoutes from './repositories';
+import githubRoutes from './github';
+import scheduledScansRoutes from './scheduledScans';
 
 const router = Router();
 
@@ -46,6 +48,12 @@ router.use('/sbom', sbomRoutes);
 
 // Repository management routes
 router.use('/repositories', repositoriesRoutes);
+
+// GitHub integration routes
+router.use('/github', githubRoutes);
+
+// Scheduled scans routes
+router.use('/scheduled-scans', scheduledScansRoutes);
 
 /**
  * Health check endpoint

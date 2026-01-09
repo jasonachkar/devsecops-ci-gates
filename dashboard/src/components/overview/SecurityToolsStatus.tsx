@@ -66,7 +66,7 @@ export function SecurityToolsStatus({ tools }: SecurityToolsStatusProps) {
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 {getStatusIcon(tool.status)}
-                <Badge status={getStatusBadge(tool.status)} size="sm">
+                <Badge variant={getStatusBadge(tool.status)} size="sm">
                   {tool.findings} {tool.findings === 1 ? 'finding' : 'findings'}
                 </Badge>
               </div>
@@ -77,4 +77,3 @@ export function SecurityToolsStatus({ tools }: SecurityToolsStatusProps) {
     </Card>
   );
 }
-

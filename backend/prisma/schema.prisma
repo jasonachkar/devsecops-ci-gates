@@ -10,6 +10,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ScheduleType {
+  daily
+  weekly
+  monthly
+  manual
+}
+
 // Repositories table - Multi-repo support
 model Repository {
   id          String   @id @default(uuid())
@@ -21,9 +28,10 @@ model Repository {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  scans    Scan[]
-  trends   ScanTrend[]
-  apiKeys  ApiKey[]
+  scans          Scan[]
+  trends         ScanTrend[]
+  apiKeys        ApiKey[]
+  scheduledScans ScheduledScan[]
 
   @@unique([name, provider], name: "repository_name_provider")
   @@index([isActive])
@@ -51,9 +59,9 @@ model Scan {
   metadata      Json?    // Additional CI/CD metadata
   createdAt     DateTime @default(now())
 
-  repository Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
-  findings   Finding[]
-  sbomRecords SbomRecord[]
+  repository         Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  findings           Finding[]
+  sbomRecords        SbomRecord[]
   remediationTickets RemediationTicket[]
 
   @@index([repositoryId])
@@ -61,6 +69,27 @@ model Scan {
   @@index([branch])
   @@index([status])
   @@map("scans")
+}
+
+// Scheduled scans - Background scan schedules
+model ScheduledScan {
+  id             String       @id @default(uuid())
+  repositoryId   String
+  scheduleType   ScheduleType
+  scheduleConfig Json
+  timezone       String       @default("UTC")
+  isEnabled      Boolean      @default(true)
+  nextRunAt      DateTime?
+  lastRunAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([repositoryId])
+  @@index([isEnabled])
+  @@index([nextRunAt])
+  @@map("scheduled_scans")
 }
 
 // Findings table - Normalized security findings
@@ -237,4 +266,3 @@ model ApiKey {
   @@index([isActive])
   @@map("api_keys")
 }
-

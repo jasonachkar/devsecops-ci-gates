@@ -19,6 +19,8 @@ import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimit';
 import routes from './routes';
 import { disconnectPrisma } from './config/database';
+import { DataSeeder } from './services/dataSeeder';
+import { Scheduler } from './services/scheduler';
 
 /**
  * Express application instance
@@ -39,9 +41,14 @@ const httpServer = createServer(app);
  * @type {SocketIOServer}
  * @description Handles real-time WebSocket connections for live dashboard updates
  */
+const corsOrigins = env.CORS_ORIGIN
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: env.CORS_ORIGIN.split(','), // Allow connections from configured origins
+    origin: corsOrigins, // Allow connections from configured origins
     methods: ['GET', 'POST'], // WebSocket methods
     credentials: true, // Allow credentials (cookies, auth headers)
   },
@@ -114,7 +121,7 @@ app.use(helmet({
  * Allows the frontend (running on different port/domain) to make requests to this API
  */
 app.use(cors({
-  origin: env.CORS_ORIGIN.split(','), // Allowed origins (comma-separated)
+  origin: corsOrigins, // Allowed origins (comma-separated)
   credentials: true, // Allow cookies and auth headers
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT'], // Allowed HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'], // Allowed request headers
@@ -199,6 +206,7 @@ app.use(errorHandler);
  */
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
+  Scheduler.shutdown(); // Stop all cron jobs
   io.close(); // Close all WebSocket connections
   await disconnectPrisma(); // Close database connection pool
   process.exit(0);
@@ -206,20 +214,56 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully');
+  Scheduler.shutdown(); // Stop all cron jobs
   io.close();
   await disconnectPrisma();
   process.exit(0);
 });
 
 /**
+ * Initialize application services
+ * @description Seeds demo data and initializes scheduler on startup
+ */
+async function initializeServices() {
+  try {
+    // Seed demo data if enabled and not skipped
+    if (env.SEED_DEMO_DATA && !env.SKIP_SEED) {
+      const isSeeded = await DataSeeder.isSeeded();
+      if (!isSeeded) {
+        logger.info('Seeding demo data...');
+        await DataSeeder.seedVulnerableRepositories(30);
+        logger.info('Demo data seeding completed');
+      } else {
+        logger.info('Demo data already seeded, skipping');
+      }
+    }
+
+    // Initialize scheduler if enabled
+    if (env.SCHEDULER_ENABLED) {
+      logger.info('Initializing scheduler...');
+      await Scheduler.initialize();
+      
+      // Check for overdue scans and process them
+      await Scheduler.processOverdueScans();
+    }
+  } catch (error) {
+    logger.error('Failed to initialize services', { error });
+    // Don't crash the server if initialization fails
+  }
+}
+
+/**
  * Start HTTP server
  * @description Listens on configured PORT and logs startup information
  */
-const server = httpServer.listen(env.PORT, () => {
+const server = httpServer.listen(env.PORT, async () => {
   logger.info(`🚀 Server running on port ${env.PORT}`, {
     environment: env.NODE_ENV,
     apiVersion: env.API_VERSION,
   });
+
+  // Initialize services after server starts
+  await initializeServices();
 });
 
 /**

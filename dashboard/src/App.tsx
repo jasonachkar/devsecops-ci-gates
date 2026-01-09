@@ -10,6 +10,7 @@ import { WebSocketProvider } from './app/providers/WebSocketProvider';
 import { ErrorBoundary } from './shared/components/ErrorBoundary';
 import { Header } from './shared/components/layout/Header';
 import { DashboardPage } from './features/dashboard/pages/DashboardPage';
+import { GitHubScannerPage } from './features/github-scanner/pages/GitHubScannerPage';
 
 // Get base path from Vite config (for GitHub Pages deployment)
 // Handle both development and production scenarios
@@ -37,6 +38,7 @@ function App() {
                 <main>
                   <Routes>
                     <Route path="/" element={<DashboardPage />} />
+                    <Route path="/scan" element={<GitHubScannerPage />} />
                   </Routes>
                 </main>
               </div>

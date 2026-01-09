@@ -282,7 +282,7 @@ export function FindingsTable({ findings }: FindingsTableProps) {
                   >
                     <td className="px-4 py-3">
                       <Badge
-                        status={getSeverityBadgeStatus(finding.severity)}
+                        variant={getSeverityBadgeStatus(finding.severity)}
                         size="sm"
                       >
                         <Icon className="h-3 w-3" />
