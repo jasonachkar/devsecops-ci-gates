@@ -213,7 +213,7 @@ export function CloudSecurityPage() {
                         </p>
                       )}
                     </div>
-                    <Badge status={getSeverityBadge(finding.severity)} size="sm">
+                    <Badge variant={getSeverityBadge(finding.severity)} size="sm">
                       {finding.severity}
                     </Badge>
                   </div>
@@ -304,7 +304,7 @@ export function CloudSecurityPage() {
                         <span className="text-sm text-dark-text-secondary">
                           {type.replace(/_/g, ' ')}
                         </span>
-                        <Badge status="warning" size="sm">
+                        <Badge variant="warning" size="sm">
                           {count}
                         </Badge>
                       </div>
@@ -325,7 +325,7 @@ export function CloudSecurityPage() {
                         <span className="text-sm text-dark-text-secondary">
                           {type.replace(/_/g, ' ')}
                         </span>
-                        <Badge status="warning" size="sm">
+                        <Badge variant="warning" size="sm">
                           {count}
                         </Badge>
                       </div>
@@ -344,5 +344,3 @@ export function CloudSecurityPage() {
     </div>
   );
 }
-
-

@@ -75,11 +75,16 @@ class WebSocketService {
      * @event connect_error
      */
     this.socket.on('connect_error', (error) => {
+      const socketError = error as {
+        message?: string;
+        type?: string;
+        description?: string;
+      };
       // Always log connection errors for debugging
       console.warn('WebSocket connection error:', {
-        message: error.message,
-        type: error.type,
-        description: error.description,
+        message: socketError.message,
+        type: socketError.type,
+        description: socketError.description,
         wsUrl: WS_URL,
       });
       this.emit('error', error); // Notify listeners
@@ -152,4 +157,3 @@ class WebSocketService {
 }
 
 export const wsService = new WebSocketService();
-

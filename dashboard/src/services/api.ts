@@ -90,15 +90,14 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
-    // Build headers object with defaults
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json', // Default to JSON
-      ...options.headers, // Allow override of headers
-    };
-
+    // Build headers with defaults and preserve caller overrides
+    const headers = new Headers(options.headers);
+    if (!headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json'); // Default to JSON
+    }
     // Add JWT token to Authorization header if available
     if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+      headers.set('Authorization', `Bearer ${this.token}`);
     }
 
     try {
@@ -329,4 +328,3 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);
-

@@ -79,7 +79,7 @@ export function PipelineTable({ pipelines }: PipelineTableProps) {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       {getStatusIcon(pipeline.status)}
-                      <Badge status={getStatusBadge(pipeline.status)} size="sm">
+                      <Badge variant={getStatusBadge(pipeline.status)} size="sm">
                         {pipeline.status}
                       </Badge>
                     </div>
@@ -104,4 +104,3 @@ export function PipelineTable({ pipelines }: PipelineTableProps) {
     </Card>
   );
 }
-

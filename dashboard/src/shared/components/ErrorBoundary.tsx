@@ -3,7 +3,8 @@
  * Catches React errors and displays a fallback UI
  */
 
-import { Component, ReactNode, ErrorInfo } from 'react';
+import { Component } from 'react';
+import type { ReactNode, ErrorInfo } from 'react';
 import { Card, CardContent } from './ui/Card';
 import { Button } from './ui/Button';
 import { AlertTriangle } from 'lucide-react';
@@ -64,4 +65,3 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-
