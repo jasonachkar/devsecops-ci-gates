@@ -36,7 +36,13 @@ export function TrendAnalysis({ repositoryId, days = 30 }: TrendAnalysisProps) {
   const [trends, setTrends] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedMetric, setSelectedMetric] = useState<'total' | 'critical' | 'high'>('total');
+  const metricKeyMap = {
+    total: 'totalFindings',
+    critical: 'criticalCount',
+    high: 'highCount',
+  } as const;
+  type Metric = keyof typeof metricKeyMap;
+  const [selectedMetric, setSelectedMetric] = useState<Metric>('total');
 
   useEffect(() => {
     loadTrends();
@@ -115,10 +121,11 @@ export function TrendAnalysis({ repositoryId, days = 30 }: TrendAnalysisProps) {
   }));
 
   // Calculate trend direction
-  const calculateTrend = (metric: 'total' | 'critical' | 'high') => {
+  const calculateTrend = (metric: Metric) => {
     if (trends.length < 2) return null;
-    const first = trends[0][metric === 'total' ? 'totalFindings' : `${metric}Count`];
-    const last = trends[trends.length - 1][metric === 'total' ? 'totalFindings' : `${metric}Count`];
+    const metricKey = metricKeyMap[metric];
+    const first = trends[0][metricKey];
+    const last = trends[trends.length - 1][metricKey];
     const change = last - first;
     const percentChange = first > 0 ? ((change / first) * 100).toFixed(1) : '0';
     return { change, percentChange, isPositive: change < 0 };
@@ -131,7 +138,7 @@ export function TrendAnalysis({ repositoryId, days = 30 }: TrendAnalysisProps) {
       : TrendingUp
     : Minus;
 
-  const getMetricColor = (metric: string) => {
+  const getMetricColor = (metric: Metric) => {
     switch (metric) {
       case 'total':
         return '#8b5cf6';
@@ -208,7 +215,7 @@ export function TrendAnalysis({ repositoryId, days = 30 }: TrendAnalysisProps) {
               <div className="text-right">
                 <div className="text-sm text-dark-text-secondary">Current</div>
                 <div className="text-xl font-bold text-dark-text-primary">
-                  {trends[trends.length - 1][selectedMetric === 'total' ? 'totalFindings' : `${selectedMetric}Count`]}
+                  {trends[trends.length - 1][metricKeyMap[selectedMetric]]}
                 </div>
               </div>
             </div>
@@ -332,5 +339,4 @@ export function TrendAnalysis({ repositoryId, days = 30 }: TrendAnalysisProps) {
     </div>
   );
 }
-
 
