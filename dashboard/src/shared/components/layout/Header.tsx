@@ -3,12 +3,14 @@
  * Modern application header with status indicators
  */
 
-import { Shield, Wifi, WifiOff, Bell, Search, User } from 'lucide-react';
+import { Shield, Wifi, WifiOff, Bell, Search, User, Scan } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { useWebSocket } from '../../../app/providers/WebSocketProvider';
 import { cn } from '../../lib/utils';
 
 export function Header() {
   const { isConnected } = useWebSocket();
+  const location = useLocation();
 
   return (
     <header className={cn(
@@ -20,7 +22,7 @@ export function Header() {
       <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Left: Logo & Title */}
-          <div className="flex items-center gap-4">
+          <Link to="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-purple shadow-glow-purple">
               <Shield className="h-5 w-5 text-white" />
             </div>
@@ -32,7 +34,7 @@ export function Header() {
                 Enterprise Security Monitoring
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Center: Search (hidden on mobile) */}
           <div className="hidden md:flex flex-1 max-w-md mx-8">
@@ -57,6 +59,22 @@ export function Header() {
 
           {/* Right: Status & Actions */}
           <div className="flex items-center gap-3">
+            {/* Scan Repository Button */}
+            <Link
+              to="/scan"
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-lg',
+                'text-sm font-medium transition-all duration-200',
+                location.pathname === '/scan'
+                  ? 'bg-info/20 text-info border border-info/30'
+                  : 'bg-info/10 text-info hover:bg-info/20 border border-info/20',
+                'focus:outline-none focus:ring-2 focus:ring-info/50'
+              )}
+            >
+              <Scan className="h-4 w-4" />
+              <span className="hidden sm:inline">Scan Repository</span>
+            </Link>
+
             {/* Connection Status */}
             <div className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-lg',

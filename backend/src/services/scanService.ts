@@ -11,6 +11,8 @@ import { prisma } from '../config/database';
 import { logger } from '../config/logger';
 import type { ScanPayload, SeverityLevel } from '../types';
 import { scanPayloadSchema } from '../utils/validators';
+import { PolicyEngine } from './policyEngine';
+import { OWASPMapper } from './owaspMapper';
 
 /**
  * Scan Service Class
@@ -41,9 +43,23 @@ export class ScanService {
     // This ensures data integrity before database insertion
     const validated = scanPayloadSchema.parse(payload);
 
-    // Calculate gate status based on severity thresholds
+    // Calculate gate status using policy engine
     // Determines if scan should pass, warn, or fail CI/CD gates
-    const gateStatus = this.calculateGateStatus(validated.summary);
+    const policy = await PolicyEngine.getPolicy();
+    // Ensure all required fields are present for policy evaluation
+    const summary: ScanPayload['summary'] = {
+      total: validated.summary.total,
+      bySeverity: {
+        critical: validated.summary.bySeverity.critical,
+        high: validated.summary.bySeverity.high,
+        medium: validated.summary.bySeverity.medium,
+        low: validated.summary.bySeverity.low,
+        info: validated.summary.bySeverity.info,
+      },
+      byTool: validated.summary.byTool || {},
+    };
+    const gateEvaluation = PolicyEngine.evaluateGate(summary, policy);
+    const gateStatus = gateEvaluation.status;
 
     // Create scan record in database
     // Stores high-level scan metadata and aggregated counts
@@ -67,25 +83,58 @@ export class ScanService {
       },
     });
 
-    // Create individual findings in bulk
+    // Create individual findings with compliance mappings
     // Only create if there are findings to avoid unnecessary DB calls
     if (validated.findings.length > 0) {
-      await prisma.finding.createMany({
-        data: validated.findings.map((finding) => ({
-          scanId: scan.id, // Foreign key to scan
-          tool: finding.tool, // Tool that found this (codeql, trivy, etc.)
-          category: finding.category || null, // Category (sast, sca, etc.)
-          severity: finding.severity, // Severity level (critical, high, etc.)
-          ruleId: finding.ruleId || null, // Tool-specific rule identifier
-          title: finding.title, // Human-readable finding title
-          filePath: finding.file || null, // File path where finding was detected
-          lineNumber: finding.line || null, // Line number (if applicable)
-          cwe: finding.cwe || null, // CWE identifier (if applicable)
-          cvssScore: finding.cvss ? finding.cvss : null, // CVSS score (0-10)
-          message: finding.message || null, // Detailed finding message
-          fingerprint: finding.fingerprint || null, // Unique fingerprint for deduplication
-        })),
-      });
+      // Create findings first to get IDs
+      const findingRecords = await Promise.all(
+        validated.findings.map((finding) =>
+          prisma.finding.create({
+            data: {
+              scanId: scan.id, // Foreign key to scan
+              tool: finding.tool, // Tool that found this (codeql, trivy, etc.)
+              category: finding.category || null, // Category (sast, sca, etc.)
+              severity: finding.severity, // Severity level (critical, high, etc.)
+              ruleId: finding.ruleId || null, // Tool-specific rule identifier
+              title: finding.title, // Human-readable finding title
+              filePath: finding.file || null, // File path where finding was detected
+              lineNumber: finding.line || null, // Line number (if applicable)
+              cwe: finding.cwe || null, // CWE identifier (if applicable)
+              cvssScore: finding.cvss ? finding.cvss : null, // CVSS score (0-10)
+              message: finding.message || null, // Detailed finding message
+              fingerprint: finding.fingerprint || null, // Unique fingerprint for deduplication
+            },
+          })
+        )
+      );
+
+      // Create compliance mappings for OWASP Top 10
+      const complianceMappings = [];
+      for (let i = 0; i < validated.findings.length; i++) {
+        const finding = validated.findings[i];
+        const findingRecord = findingRecords[i];
+        
+        // Map to OWASP Top 10
+        const owaspCategories = OWASPMapper.mapToOWASP(
+          finding.cwe,
+          finding.tool,
+          finding.ruleId
+        );
+
+        for (const category of owaspCategories) {
+          complianceMappings.push({
+            findingId: findingRecord.id,
+            framework: 'owasp-top10',
+            category,
+          });
+        }
+      }
+
+      if (complianceMappings.length > 0) {
+        await prisma.complianceMapping.createMany({
+          data: complianceMappings,
+        });
+      }
     }
 
     logger.info('Scan created', {
@@ -205,28 +254,5 @@ export class ScanService {
     };
   }
 
-  /**
-   * Calculate CI/CD gate status based on finding severity counts
-   * @static
-   * @private
-   * @param {ScanSummary} summary - Scan summary with severity breakdown
-   * @returns {string} Gate status: 'failed', 'warning', or 'passed'
-   * @description Determines if CI/CD pipeline should pass, warn, or fail
-   * - Failed: Any critical or high severity findings
-   * - Warning: More than 5 medium severity findings
-   * - Passed: All other cases
-   */
-  private static calculateGateStatus(summary: ScanPayload['summary']): string {
-    // Fail gate if any critical or high severity findings exist
-    if (summary.bySeverity.critical > 0 || summary.bySeverity.high > 0) {
-      return 'failed';
-    }
-    // Warn if more than 5 medium severity findings
-    if (summary.bySeverity.medium > 5) {
-      return 'warning';
-    }
-    // Otherwise, gate passes
-    return 'passed';
-  }
 }
 

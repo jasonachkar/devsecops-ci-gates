@@ -39,11 +39,19 @@ const envSchema = z.object({
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
   AWS_SECURITY_HUB_ENABLED: z.string().transform(val => val === 'true').default('false'), // Convert string to boolean
   
+  // GitHub configuration (optional - improves rate limits)
+  GITHUB_TOKEN: z.string().optional(),
+  
   // CORS configuration
   CORS_ORIGIN: z.string().default('http://localhost:5173'), // Comma-separated list of allowed origins
   
   // Logging configuration
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
+  
+  // Data seeding configuration
+  SEED_DEMO_DATA: z.string().transform(val => val === 'true').default('true'),
+  SKIP_SEED: z.string().transform(val => val === 'true').default('false'),
+  SCHEDULER_ENABLED: z.string().transform(val => val === 'true').default('true'),
 });
 
 /**
