@@ -13,6 +13,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SarifParser, JsonParser, NormalizedFinding } from '../gates/gate-evaluator';
 
+interface SeverityCounts {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  info: number;
+}
+
 interface NormalizedOutput {
   metadata: {
     timestamp: string;
@@ -20,6 +28,11 @@ interface NormalizedOutput {
     branch: string;
     commit: string;
     triggeredBy: string;
+  };
+  summary: {
+    total: number;
+    bySeverity: SeverityCounts;
+    byTool: { [tool: string]: number };
   };
   findings: NormalizedFinding[];
 }
@@ -71,10 +84,26 @@ class ResultNormalizer {
   }
 
   /**
-   * Create normalized output with metadata
+   * Create normalized output with metadata and summary
    */
   createOutput(): NormalizedOutput {
     const findings = this.normalize();
+
+    // Calculate severity counts
+    const bySeverity: SeverityCounts = {
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+      info: 0,
+    };
+
+    const byTool: { [tool: string]: number } = {};
+
+    for (const finding of findings) {
+      bySeverity[finding.severity]++;
+      byTool[finding.tool] = (byTool[finding.tool] || 0) + 1;
+    }
 
     return {
       metadata: {
@@ -83,6 +112,11 @@ class ResultNormalizer {
         branch: process.env.GITHUB_REF_NAME || 'unknown',
         commit: process.env.GITHUB_SHA || 'unknown',
         triggeredBy: process.env.GITHUB_ACTOR || 'unknown',
+      },
+      summary: {
+        total: findings.length,
+        bySeverity,
+        byTool,
       },
       findings,
     };
