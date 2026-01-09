@@ -10,8 +10,6 @@
 import {
   SecurityHubClient,
   GetFindingsCommand,
-  BatchImportFindingsCommand,
-  FindingIdentifier,
   AwsSecurityFinding,
 } from '@aws-sdk/client-securityhub';
 import { env } from '../../config/env';
@@ -110,6 +108,10 @@ export class SecurityHubService {
 
     for (const finding of findings) {
       try {
+        if (!finding.Id) {
+          logger.warn('Skipping Security Hub finding without Id');
+          continue;
+        }
         // Map AWS severity to our severity levels
         const severity = this.mapSeverity(finding.Severity?.Normalized || finding.Severity?.Label);
 
@@ -162,8 +164,16 @@ export class SecurityHubService {
   /**
    * Map AWS Security Hub severity to normalized severity
    */
-  private mapSeverity(awsSeverity?: string): SeverityLevel {
+  private mapSeverity(awsSeverity?: string | number): SeverityLevel {
     if (!awsSeverity) return 'info';
+
+    if (typeof awsSeverity === 'number') {
+      if (awsSeverity >= 90) return 'critical';
+      if (awsSeverity >= 70) return 'high';
+      if (awsSeverity >= 40) return 'medium';
+      if (awsSeverity >= 1) return 'low';
+      return 'info';
+    }
 
     const normalized = awsSeverity.toUpperCase();
     
@@ -232,4 +242,3 @@ export class SecurityHubService {
     };
   }
 }
-

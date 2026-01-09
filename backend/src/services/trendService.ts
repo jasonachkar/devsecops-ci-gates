@@ -117,7 +117,17 @@ export class TrendService {
     }
 
     // Aggregate counts
-    const aggregated = scans.reduce(
+    type TrendAggregate = {
+      totalFindings: number;
+      criticalCount: number;
+      highCount: number;
+      mediumCount: number;
+      lowCount: number;
+      infoCount: number;
+      scansCount: number;
+    };
+
+    const aggregated = scans.reduce<TrendAggregate>(
       (acc, scan) => ({
         totalFindings: acc.totalFindings + scan.totalFindings,
         criticalCount: acc.criticalCount + scan.criticalCount,
@@ -269,4 +279,3 @@ export class TrendService {
     return Math.round(((newValue - oldValue) / oldValue) * 100);
   }
 }
-

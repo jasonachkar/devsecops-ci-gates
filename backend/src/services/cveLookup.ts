@@ -53,7 +53,7 @@ export class CVELookupService {
         return null;
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as any;
 
       if (!data.vulnerabilities || data.vulnerabilities.length === 0) {
         return null;
@@ -65,15 +65,19 @@ export class CVELookupService {
       let cvssScore: number | undefined;
       let severity: string | undefined;
 
-      if (vuln.metrics?.cvssMetricV31?.[0]) {
-        cvssScore = vuln.metrics.cvssMetricV31[0].cvssData.baseScore;
-        severity = this.mapCVSSSeverity(cvssScore);
-      } else if (vuln.metrics?.cvssMetricV30?.[0]) {
-        cvssScore = vuln.metrics.cvssMetricV30[0].cvssData.baseScore;
-        severity = this.mapCVSSSeverity(cvssScore);
-      } else if (vuln.metrics?.cvssMetricV2?.[0]) {
-        cvssScore = vuln.metrics.cvssMetricV2[0].cvssData.baseScore;
-        severity = this.mapCVSSSeverity(cvssScore);
+      const v31Score = vuln.metrics?.cvssMetricV31?.[0]?.cvssData?.baseScore;
+      const v30Score = vuln.metrics?.cvssMetricV30?.[0]?.cvssData?.baseScore;
+      const v2Score = vuln.metrics?.cvssMetricV2?.[0]?.cvssData?.baseScore;
+
+      if (typeof v31Score === 'number') {
+        cvssScore = v31Score;
+        severity = this.mapCVSSSeverity(v31Score);
+      } else if (typeof v30Score === 'number') {
+        cvssScore = v30Score;
+        severity = this.mapCVSSSeverity(v30Score);
+      } else if (typeof v2Score === 'number') {
+        cvssScore = v2Score;
+        severity = this.mapCVSSSeverity(v2Score);
       }
 
       return {

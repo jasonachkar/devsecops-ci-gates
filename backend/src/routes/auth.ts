@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
+import type { SignOptions } from 'jsonwebtoken';
 import { env } from '../config/env';
 import { prisma } from '../config/database';
 import { logger } from '../config/logger';
@@ -48,7 +49,7 @@ router.post('/login', authLimiter, async (req, res, next) => {
       },
       env.JWT_SECRET,
       {
-        expiresIn: env.JWT_EXPIRES_IN,
+        expiresIn: env.JWT_EXPIRES_IN as SignOptions['expiresIn'],
       }
     );
 
@@ -105,5 +106,4 @@ router.get('/me', authenticateJWT, async (req: any, res, next) => {
 });
 
 export default router;
-
 
