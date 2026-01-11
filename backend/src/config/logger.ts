@@ -7,6 +7,20 @@
  */
 
 import winston from 'winston';
+import fs from 'fs';
+import path from 'path';
+
+// Ensure logs directory exists in production
+if (process.env.NODE_ENV === 'production') {
+  const logsDir = path.join(process.cwd(), 'logs');
+  if (!fs.existsSync(logsDir)) {
+    try {
+      fs.mkdirSync(logsDir, { recursive: true });
+    } catch (err) {
+      console.warn('Could not create logs directory, file logging disabled:', err);
+    }
+  }
+}
 
 /**
  * Winston logger instance

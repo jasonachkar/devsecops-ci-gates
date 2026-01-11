@@ -10,6 +10,17 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+// Early startup logging to debug Fly.io issues
+console.log('=== ENV STARTUP DEBUG ===');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+console.log('DATABASE_URL length:', process.env.DATABASE_URL?.length || 0);
+console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+console.log('JWT_SECRET length:', process.env.JWT_SECRET?.length || 0);
+console.log('CORS_ORIGIN:', process.env.CORS_ORIGIN);
+console.log('=========================');
+
 /**
  * Environment variable validation schema
  * @description Defines structure and validation rules for all environment variables.
@@ -72,13 +83,20 @@ let env: Env;
 try {
   // Parse and validate all environment variables
   env = envSchema.parse(process.env);
+  console.log('✅ Environment variables validated successfully');
 } catch (error) {
   // Provide helpful error messages for missing/invalid variables
   if (error instanceof z.ZodError) {
-    console.error('❌ Invalid environment variables:');
+    console.error('========================================');
+    console.error('❌ FATAL: Invalid environment variables:');
+    console.error('========================================');
     error.errors.forEach((err) => {
       console.error(`  - ${err.path.join('.')}: ${err.message}`);
     });
+    console.error('========================================');
+    console.error('Please set the required environment variables in Fly.io secrets');
+    console.error('Required: DATABASE_URL, JWT_SECRET (min 32 chars)');
+    console.error('========================================');
     process.exit(1); // Exit with error code
   }
   throw error;
