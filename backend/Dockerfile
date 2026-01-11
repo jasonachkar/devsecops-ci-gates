@@ -33,11 +33,14 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
+# Create logs directory for production logging
+RUN mkdir -p /app/logs
+
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Change ownership
+# Change ownership (including logs directory)
 RUN chown -R nodejs:nodejs /app
 
 USER nodejs
