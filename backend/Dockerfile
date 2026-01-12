@@ -22,6 +22,9 @@ RUN npm run build
 # Production stage
 FROM node:20-alpine AS production
 
+# Install git and other required system dependencies
+RUN apk add --no-cache git
+
 WORKDIR /app
 
 # Install production dependencies only
