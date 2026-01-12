@@ -30,35 +30,40 @@ console.log('=========================');
  */
 const envSchema = z.object({
   // Server configuration
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.string()
+    .transform(val => val.toLowerCase())
+    .pipe(z.enum(['development', 'production', 'test']))
+    .default('development'),
   PORT: z.string().transform(Number).pipe(z.number().int().positive()).default('3001'),
   API_VERSION: z.string().default('v1'),
-  
+
   // Database configuration
   DATABASE_URL: z.string().url(), // PostgreSQL connection string
-  
+
   // Authentication configuration
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'), // Minimum length for security
   JWT_EXPIRES_IN: z.string().default('7d'), // Token expiration (e.g., '7d', '24h')
-  
+
   // API key for CI/CD integration (optional)
   API_KEY_CI_CD: z.string().optional(),
-  
+
   // AWS configuration (optional - only needed if AWS features are enabled)
   AWS_REGION: z.string().default('us-east-1'),
   AWS_ACCESS_KEY_ID: z.string().optional(),
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
   AWS_SECURITY_HUB_ENABLED: z.string().transform(val => val === 'true').default('false'), // Convert string to boolean
-  
+
   // GitHub configuration (optional - improves rate limits)
   GITHUB_TOKEN: z.string().optional(),
-  
+
   // CORS configuration
-  CORS_ORIGIN: z.string().default('http://localhost:5173'), // Comma-separated list of allowed origins
-  
+  CORS_ORIGIN: z.string()
+    .transform(val => val.replace(/\/+$/, '')) // Remove trailing slashes
+    .default('http://localhost:5173'), // Comma-separated list of allowed origins
+
   // Logging configuration
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
-  
+
   // Data seeding configuration
   SEED_DEMO_DATA: z.string().transform(val => val === 'true').default('true'),
   SKIP_SEED: z.string().transform(val => val === 'true').default('false'),

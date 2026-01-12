@@ -10,7 +10,9 @@
       "Bash(npm install:*)",
       "Bash(npx tailwindcss:*)",
       "Bash(npm run build:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix: Update environment variable configuration for production deployment\n\nBackend changes:\n- Make NODE_ENV validation case-insensitive to handle Fly.io''s ''Production'' value\n- Add transformer to remove trailing slashes from CORS_ORIGIN\n\nFrontend changes:\n- Update all API URL references from VITE_API_URL to VITE_API_BASE_URL\n- Update WebSocket URL configuration to derive from API base URL\n- Ensures compatibility with Vercel environment variable naming\n\nThis fixes issues where:\n1. Backend was crashing due to NODE_ENV case mismatch\n2. Frontend was still calling localhost:3001 instead of production API\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

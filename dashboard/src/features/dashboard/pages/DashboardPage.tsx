@@ -90,7 +90,7 @@ export function DashboardPage() {
               {error instanceof Error ? error.message : 'Unable to connect to the security dashboard'}
             </p>
             <p className="text-text-tertiary text-xs mb-6 font-mono bg-bg-tertiary/50 p-3 rounded-lg">
-              API: {import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1'}
+              API: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1'}
             </p>
             <button
               onClick={() => window.location.reload()}

@@ -10,7 +10,9 @@
 import { io, Socket } from 'socket.io-client';
 
 /** WebSocket server URL from environment or default */
-const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3001';
+// Derive WebSocket URL from API base URL by removing /api/v1 suffix
+const WS_URL = import.meta.env.VITE_WS_URL ||
+  (import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/v1$/, '') || 'http://localhost:3001');
 
 /**
  * WebSocket Service Class

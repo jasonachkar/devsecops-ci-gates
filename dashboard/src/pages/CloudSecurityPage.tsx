@@ -50,7 +50,7 @@ export function CloudSecurityPage() {
   const loadCloudTrailAnalysis = async () => {
     setLoading((prev) => ({ ...prev, trail: true }));
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1'}/aws/cloudtrail/recent?hours=24`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1'}/aws/cloudtrail/recent?hours=24`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
@@ -69,7 +69,7 @@ export function CloudSecurityPage() {
   const loadIamAnalysis = async () => {
     setLoading((prev) => ({ ...prev, iam: true }));
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1'}/aws/iam/analyze`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1'}/aws/iam/analyze`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
