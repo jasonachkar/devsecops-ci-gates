@@ -14,16 +14,16 @@ const router = Router();
 /**
  * GET /api/v1/repositories
  * Get all repositories
- * @access Private (requires authentication)
+ * @access Public (temporarily for MVP - TODO: add authentication)
  */
-router.get('/', authenticateJWT, RepositoryController.getRepositories);
+router.get('/', RepositoryController.getRepositories);
 
 /**
  * GET /api/v1/repositories/:id
  * Get repository by ID
- * @access Private (requires authentication)
+ * @access Public (temporarily for MVP - TODO: add authentication)
  */
-router.get('/:id', authenticateJWT, RepositoryController.getRepositoryById);
+router.get('/:id', RepositoryController.getRepositoryById);
 
 export default router;
 
