@@ -8,9 +8,9 @@ const router = Router();
 /**
  * Scan routes
  * POST /api/v1/scans - Create scan (CI/CD integration, uses API key)
- * GET /api/v1/scans - List scans (requires JWT)
- * GET /api/v1/scans/:id - Get scan by ID (requires JWT)
- * GET /api/v1/scans/latest - Get latest scan (requires JWT)
+ * GET /api/v1/scans - List scans (public for MVP - TODO: add authentication)
+ * GET /api/v1/scans/:id - Get scan by ID (public for MVP - TODO: add authentication)
+ * GET /api/v1/scans/latest - Get latest scan (public for MVP - TODO: add authentication)
  */
 
 // CI/CD ingestion endpoint (API key auth)
@@ -21,9 +21,7 @@ router.post(
   ScanController.createScan
 );
 
-// All other endpoints require JWT authentication
-router.use(authenticateJWT);
-
+// GET endpoints temporarily public for MVP
 router.get('/', apiLimiter, ScanController.listScans);
 router.get('/latest', apiLimiter, ScanController.getLatestScan);
 router.get('/:id', apiLimiter, ScanController.getScan);

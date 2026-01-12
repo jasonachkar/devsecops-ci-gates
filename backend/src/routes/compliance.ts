@@ -7,10 +7,11 @@ const router = Router();
 
 /**
  * Compliance routes
- * All endpoints require JWT authentication
+ * Public for MVP (TODO: add authentication)
  */
 
-router.use(authenticateJWT);
+// Temporarily public for MVP
+// router.use(authenticateJWT);
 
 /**
  * GET /api/v1/compliance/owasp-top10

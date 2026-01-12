@@ -7,14 +7,16 @@ const router = Router();
 
 /**
  * Finding routes
- * All endpoints require JWT authentication
+ * Read endpoints public for MVP (TODO: add authentication)
  * Write operations require engineer or admin role
  */
 
-router.use(authenticateJWT);
-
+// Read endpoints temporarily public for MVP
 router.get('/', apiLimiter, FindingController.listFindings);
 router.get('/:id', apiLimiter, FindingController.getFinding);
+
+// Write operations still require authentication
+router.use(authenticateJWT);
 router.patch(
   '/:id',
   apiLimiter,
