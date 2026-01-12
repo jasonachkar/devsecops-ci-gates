@@ -10,11 +10,12 @@ const router = Router();
 
 /**
  * AWS routes
- * All endpoints require JWT authentication and admin/engineer role
+ * Public for MVP (TODO: add authentication and role requirements)
  */
 
-router.use(authenticateJWT);
-router.use(requireRole('admin', 'engineer'));
+// Temporarily public for MVP
+// router.use(authenticateJWT);
+// router.use(requireRole('admin', 'engineer'));
 
 const securityHubService = new SecurityHubService();
 const cloudTrailService = new CloudTrailService();

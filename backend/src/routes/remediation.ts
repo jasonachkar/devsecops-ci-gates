@@ -15,37 +15,37 @@ const router = Router();
 /**
  * POST /api/v1/remediation/tickets
  * Create a new remediation ticket
- * @access Private (requires authentication)
+ * @access Public for MVP (TODO: add authentication)
  */
-router.post('/tickets', authenticateJWT, RemediationController.createTicket);
+router.post('/tickets', RemediationController.createTicket);
 
 /**
  * GET /api/v1/remediation/tickets
  * Get tickets with filtering
- * @access Private (requires authentication)
+ * @access Public for MVP (TODO: add authentication)
  */
-router.get('/tickets', authenticateJWT, RemediationController.getTickets);
+router.get('/tickets', RemediationController.getTickets);
 
 /**
  * PATCH /api/v1/remediation/tickets/:id/status
  * Update ticket status
- * @access Private (requires authentication)
+ * @access Public for MVP (TODO: add authentication)
  */
-router.patch('/tickets/:id/status', authenticateJWT, RemediationController.updateStatus);
+router.patch('/tickets/:id/status', RemediationController.updateStatus);
 
 /**
  * PATCH /api/v1/remediation/tickets/:id/assign
  * Assign ticket to user
- * @access Private (requires authentication, engineer or admin)
+ * @access Public for MVP (TODO: add authentication, engineer or admin)
  */
-router.patch('/tickets/:id/assign', authenticateJWT, requireRole('engineer', 'admin'), RemediationController.assignTicket);
+router.patch('/tickets/:id/assign', RemediationController.assignTicket);
 
 /**
  * GET /api/v1/remediation/tickets/overdue
  * Get overdue tickets (SLA violations)
- * @access Private (requires authentication)
+ * @access Public for MVP (TODO: add authentication)
  */
-router.get('/tickets/overdue', authenticateJWT, RemediationController.getOverdueTickets);
+router.get('/tickets/overdue', RemediationController.getOverdueTickets);
 
 export default router;
 

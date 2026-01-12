@@ -14,11 +14,11 @@ const router = Router();
 
 /**
  * Scheduled scan routes
- * All routes require JWT authentication
+ * Public for MVP (TODO: add authentication)
  */
 
-// Apply JWT authentication to all routes
-router.use(authenticateJWT);
+// Temporarily public for MVP
+// router.use(authenticateJWT);
 
 /**
  * @route GET /api/v1/scheduled-scans

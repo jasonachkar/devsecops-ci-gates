@@ -14,30 +14,30 @@ const router = Router();
 /**
  * POST /api/v1/sbom/generate
  * Generate SBOM for a scan
- * @access Private (requires authentication or API key)
+ * @access Keep API key auth for CI/CD integrations
  */
 router.post('/generate', authenticateApiKey, SbomController.generateSbom);
 
 /**
  * GET /api/v1/sbom
  * Get SBOM records for a scan
- * @access Private (requires authentication)
+ * @access Public for MVP (TODO: add authentication)
  */
-router.get('/', authenticateJWT, SbomController.getSbomRecords);
+router.get('/', SbomController.getSbomRecords);
 
 /**
  * GET /api/v1/sbom/:id
  * Get SBOM by ID
- * @access Private (requires authentication)
+ * @access Public for MVP (TODO: add authentication)
  */
-router.get('/:id', authenticateJWT, SbomController.getSbomById);
+router.get('/:id', SbomController.getSbomById);
 
 /**
  * GET /api/v1/sbom/:id/vulnerabilities
  * Analyze vulnerabilities from SBOM
- * @access Private (requires authentication)
+ * @access Public for MVP (TODO: add authentication)
  */
-router.get('/:id/vulnerabilities', authenticateJWT, SbomController.analyzeVulnerabilities);
+router.get('/:id/vulnerabilities', SbomController.analyzeVulnerabilities);
 
 export default router;
 
