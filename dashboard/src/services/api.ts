@@ -7,7 +7,13 @@
  * @module services/api
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+// Ensure API_BASE_URL always ends with /api/v1
+const getApiBaseUrl = () => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+  return baseUrl.endsWith('/api/v1') ? baseUrl : `${baseUrl.replace(/\/$/, '')}/api/v1`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Standard API response structure
